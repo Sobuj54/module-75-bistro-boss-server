@@ -199,6 +199,36 @@ async function run() {
       res.send({ insertResult, deleteResult });
     });
 
+    // admin stats
+    app.get("/admin-stats", verifyJWT, verifyAdmin, async (req, res) => {
+      const users = await userCollection.estimatedDocumentCount();
+      const products = await menuCollection.estimatedDocumentCount();
+      const orders = await paymentCollection.estimatedDocumentCount();
+
+      // best way to get sum of a field is to use group and sum operator
+      // Aggregate pipeline to calculate the sum of the price field
+      // const pipeline = [
+      //   {
+      //     $group: {
+      //       _id: null,
+      //       totalPrice: { $sum: '$price' }
+      //     }
+      //   }
+      // ];
+      // const result = await collection.aggregate(pipeline).toArray();
+
+      // bangla system to get sum of a field in collection
+      const payments = await paymentCollection.find().toArray();
+      const revenue = payments.reduce((sum, payment) => sum + payment.price, 0);
+
+      res.send({
+        users,
+        products,
+        orders,
+        revenue,
+      });
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
